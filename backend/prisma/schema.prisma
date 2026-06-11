@@ -1,0 +1,501 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============== AUTH & USERS ==============
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  firstName     String
+  lastName      String
+  phone         String?
+  avatar        String?
+  role          Role      @default(OPERATOR)
+  department    String?
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accessLogs        AccessLog[]
+  assetAssignments  AssetAssignment[]
+  journalEntries    JournalEntry[] @relation("CreatedBy")
+  alerts            Alert[]
+
+  @@map("users")
+}
+
+enum Role {
+  SUPER_ADMIN
+  TENANT_ADMIN
+  FACTORY_MANAGER
+  DEPARTMENT_HEAD
+  OPERATOR
+  VIEWER
+  SECURITY
+}
+
+// ============== ATTENDANCE ==============
+model Employee {
+  id              String   @id @default(uuid())
+  employeeCode    String   @unique
+  name            String
+  department      String
+  jobTitle        String
+  status          EmployeeStatus @default(ACTIVE)
+  baseSalary      Decimal  @default(0)
+  workSchedule    Json?
+  createdAt       DateTime @default(now())
+
+  attendanceRecords AttendanceRecord[]
+  payrollEntries    PayrollEntry[]
+
+  @@map("employees")
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  TERMINATED
+}
+
+model AttendanceRecord {
+  id              String   @id @default(uuid())
+  employeeId      String
+  employee        Employee @relation(fields: [employeeId], references: [id])
+  date            DateTime
+  clockIn         DateTime?
+  clockOut        DateTime?
+  workHours       Decimal?
+  overtimeHours   Decimal  @default(0)
+  status          AttendanceStatus @default(ABSENT)
+  method          String   @default("mobile")
+  location        Json?
+  approvedBy      String?
+  isManualEntry   Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  @@map("attendance_records")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+  ON_LEAVE
+  HALF_DAY
+}
+
+// ============== ACCESS CONTROL ==============
+model AccessPoint {
+  id          String   @id @default(uuid())
+  name        String
+  location    String
+  deviceType  String
+  direction   String
+  status      String   @default("online")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  accessLogs  AccessLog[]
+
+  @@map("access_points")
+}
+
+model AccessLog {
+  id            String      @id @default(uuid())
+  accessPointId String
+  accessPoint   AccessPoint @relation(fields: [accessPointId], references: [id])
+  userId        String?
+  user          User?       @relation(fields: [userId], references: [id])
+  visitorName   String?
+  direction     String
+  timestamp     DateTime    @default(now())
+  method        String
+  result        String      @default("granted")
+  reason        String?
+
+  @@map("access_logs")
+}
+
+// ============== PRODUCTION MACHINES ==============
+model Machine {
+  id              String   @id @default(uuid())
+  name            String
+  model           String
+  manufacturer    String
+  serialNumber    String   @unique
+  location        String
+  status          MachineStatus @default(IDLE)
+  currentOperator String?
+  specifications  Json?
+  createdAt       DateTime @default(now())
+
+  telemetry       MachineTelemetry[]
+  productionOrders ProductionOrder[]
+  maintenanceRecords MaintenanceRecord[]
+
+  @@map("machines")
+}
+
+enum MachineStatus {
+  OPERATIONAL
+  IDLE
+  RUNNING
+  MAINTENANCE
+  DOWN
+  DECOMMISSIONED
+}
+
+model MachineTelemetry {
+  id              String   @id @default(uuid())
+  machineId       String
+  machine         Machine  @relation(fields: [machineId], references: [id])
+  timestamp       DateTime @default(now())
+  status          String
+  cycleCount      Int      @default(0)
+  outputQuantity  Int      @default(0)
+  temperature     Decimal?
+  vibration       Decimal?
+  powerConsumption Decimal?
+  errorCode       String?
+
+  @@index([machineId, timestamp])
+  @@map("machine_telemetry")
+}
+
+model ProductionOrder {
+  id              String   @id @default(uuid())
+  orderNumber     String   @unique
+  productName     String
+  quantityTarget  Int
+  quantityActual  Int      @default(0)
+  machineId       String?
+  machine         Machine? @relation(fields: [machineId], references: [id])
+  startTime       DateTime?
+  endTime         DateTime?
+  status          OrderStatus @default(PLANNED)
+  priority        String   @default("normal")
+  createdAt       DateTime @default(now())
+
+  @@map("production_orders")
+}
+
+enum OrderStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model MaintenanceRecord {
+  id              String   @id @default(uuid())
+  machineId       String
+  machine         Machine  @relation(fields: [machineId], references: [id])
+  maintenanceType String
+  scheduledDate   DateTime
+  completedDate   DateTime?
+  description     String
+  cost            Decimal  @default(0)
+  downtimeHours   Decimal  @default(0)
+  status          String   @default("scheduled")
+  createdAt       DateTime @default(now())
+
+  @@map("maintenance_records")
+}
+
+// ============== INVENTORY ==============
+model Warehouse {
+  id          String   @id @default(uuid())
+  name        String
+  location    String
+  type        String
+  createdAt   DateTime @default(now())
+
+  items       InventoryItem[]
+
+  @@map("warehouses")
+}
+
+model InventoryItem {
+  id              String   @id @default(uuid())
+  sku             String   @unique
+  barcode         String?
+  name            String
+  description     String?
+  category        String
+  unitOfMeasure   String
+  warehouseId     String
+  warehouse       Warehouse @relation(fields: [warehouseId], references: [id])
+  binLocation     String?
+  quantityOnHand  Decimal  @default(0)
+  quantityReserved Decimal @default(0)
+  reorderPoint    Decimal  @default(0)
+  reorderQuantity Decimal  @default(0)
+  unitCost        Decimal  @default(0)
+  status          String   @default("active")
+  createdAt       DateTime @default(now())
+
+  stockMovements  StockMovement[]
+
+  @@map("inventory_items")
+}
+
+model StockMovement {
+  id              String   @id @default(uuid())
+  itemId          String
+  item            InventoryItem @relation(fields: [itemId], references: [id])
+  movementType    String
+  quantity        Decimal
+  referenceType   String?
+  referenceId     String?
+  unitCost        Decimal?
+  totalCost       Decimal?
+  performedBy     String?
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  @@map("stock_movements")
+}
+
+model PurchaseOrder {
+  id              String   @id @default(uuid())
+  poNumber        String   @unique
+  supplierName    String
+  status          String   @default("draft")
+  totalAmount     Decimal  @default(0)
+  currency        String   @default("NGN")
+  expectedDelivery DateTime?
+  actualDelivery  DateTime?
+  createdAt       DateTime @default(now())
+
+  @@map("purchase_orders")
+}
+
+// ============== ENVIRONMENTAL SENSORS ==============
+model Sensor {
+  id              String   @id @default(uuid())
+  name            String
+  sensorType      String
+  location        String
+  unit            String
+  minThreshold    Decimal?
+  maxThreshold    Decimal?
+  criticalThreshold Decimal?
+  status          String   @default("active")
+  createdAt       DateTime @default(now())
+
+  readings        SensorReading[]
+  incidents       EnvironmentalIncident[]
+
+  @@map("sensors")
+}
+
+model SensorReading {
+  id              String   @id @default(uuid())
+  sensorId        String
+  sensor          Sensor   @relation(fields: [sensorId], references: [id])
+  timestamp       DateTime @default(now())
+  value           Decimal
+  unit            String
+  isAlert         Boolean  @default(false)
+
+  @@index([sensorId, timestamp])
+  @@map("sensor_readings")
+}
+
+model EnvironmentalIncident {
+  id              String   @id @default(uuid())
+  sensorId        String
+  sensor          Sensor   @relation(fields: [sensorId], references: [id])
+  incidentType    String
+  severity        String
+  description     String
+  valueAtTrigger  Decimal?
+  thresholdValue  Decimal?
+  resolvedAt      DateTime?
+  createdAt       DateTime @default(now())
+
+  @@map("environmental_incidents")
+}
+
+// ============== ASSETS ==============
+model Asset {
+  id              String   @id @default(uuid())
+  assetTag        String   @unique
+  name            String
+  category        String
+  brand           String?
+  model           String?
+  serialNumber    String?
+  purchaseCost    Decimal  @default(0)
+  currentValue    Decimal  @default(0)
+  assignedTo      String?
+  location        String?
+  status          String   @default("available")
+  warrantyExpiry  DateTime?
+  specifications  Json?
+  createdAt       DateTime @default(now())
+
+  assignments     AssetAssignment[]
+
+  @@map("assets")
+}
+
+model AssetAssignment {
+  id              String   @id @default(uuid())
+  assetId         String
+  asset           Asset    @relation(fields: [assetId], references: [id])
+  employeeId      String?
+  user            User?    @relation(fields: [employeeId], references: [id])
+  assignedAt      DateTime @default(now())
+  returnedAt      DateTime?
+  conditionOut    String?
+  conditionIn     String?
+  notes           String?
+
+  @@map("asset_assignments")
+}
+
+// ============== ERP ==============
+model Account {
+  id              String   @id @default(uuid())
+  accountCode     String   @unique
+  accountName     String
+  accountType     String
+  parentId        String?
+  parent          Account? @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children        Account[] @relation("AccountHierarchy")
+  isBankAccount   Boolean  @default(false)
+  bankName        String?
+  bankAccountNumber String?
+  currency        String   @default("NGN")
+  openingBalance  Decimal  @default(0)
+  currentBalance  Decimal  @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  debitLines      JournalEntryLine[] @relation("AccountLines")
+
+  @@map("accounts")
+}
+
+model JournalEntry {
+  id              String   @id @default(uuid())
+  entryNumber     String   @unique
+  date            DateTime
+  reference       String
+  sourceModule    String   @default("manual")
+  totalDebit      Decimal  @default(0)
+  totalCredit     Decimal  @default(0)
+  isPosted        Boolean  @default(false)
+  postedAt        DateTime?
+  isReversal      Boolean  @default(false)
+  createdBy       String
+  creator         User     @relation("CreatedBy", fields: [createdBy], references: [id])
+  createdAt       DateTime @default(now())
+
+  lines           JournalEntryLine[]
+
+  @@map("journal_entries")
+}
+
+model JournalEntryLine {
+  id              String   @id @default(uuid())
+  journalEntryId  String
+  journalEntry    JournalEntry @relation(fields: [journalEntryId], references: [id])
+  accountId       String
+  account         Account  @relation(fields: [accountId], references: [id], name: "AccountLines")
+  description     String?
+  debit           Decimal  @default(0)
+  credit          Decimal  @default(0)
+
+  @@map("journal_entry_lines")
+}
+
+model BankAccount {
+  id              String   @id @default(uuid())
+  name            String
+  bankName        String
+  accountNumber   String
+  currency        String   @default("NGN")
+  currentBalance  Decimal  @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  @@map("bank_accounts")
+}
+
+model PayrollPeriod {
+  id              String   @id @default(uuid())
+  month           Int
+  year            Int
+  startDate       DateTime
+  endDate         DateTime
+  status          String   @default("draft")
+  totalBasicSalary Decimal @default(0)
+  totalAllowances Decimal  @default(0)
+  totalDeductions Decimal  @default(0)
+  totalTax        Decimal  @default(0)
+  totalNetPay     Decimal  @default(0)
+  createdAt       DateTime @default(now())
+
+  entries         PayrollEntry[]
+
+  @@map("payroll_periods")
+}
+
+model PayrollEntry {
+  id              String   @id @default(uuid())
+  payrollPeriodId String
+  period          PayrollPeriod @relation(fields: [payrollPeriodId], references: [id])
+  employeeId      String
+  employee        Employee @relation(fields: [employeeId], references: [id])
+  basicSalary     Decimal  @default(0)
+  allowances      Json     @default("{}")
+  deductions      Json     @default("{}")
+  grossPay        Decimal  @default(0)
+  taxPayable      Decimal  @default(0)
+  netPay          Decimal  @default(0)
+  createdAt       DateTime @default(now())
+
+  @@map("payroll_entries")
+}
+
+// ============== ALERTS ==============
+model Alert {
+  id              String   @id @default(uuid())
+  title           String
+  message         String
+  severity        String   @default("info")
+  module          String
+  status          String   @default("pending")
+  context         Json?
+  sentAt          DateTime @default(now())
+  readAt          DateTime?
+  acknowledgedBy  String?
+  user            User?    @relation(fields: [acknowledgedBy], references: [id])
+  acknowledgedAt  DateTime?
+  resolvedAt      DateTime?
+  createdAt       DateTime @default(now())
+
+  @@map("alerts")
+}
+
+// ============== DASHBOARD ==============
+model DashboardPreference {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  layout          Json     @default("[]")
+  theme           String   @default("light")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("dashboard_preferences")
+}

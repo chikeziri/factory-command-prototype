@@ -96,6 +96,28 @@ export default function Dashboard() {
     }).format(amount || 0)
   }
 
+  const formatMachineSubtitle = (breakdown = {}) => {
+    const parts = []
+
+    if (breakdown.RUNNING) parts.push(`${breakdown.RUNNING} running`)
+    if (breakdown.OPERATIONAL) parts.push(`${breakdown.OPERATIONAL} operational`)
+    if (breakdown.MAINTENANCE) parts.push(`${breakdown.MAINTENANCE} in maintenance`)
+    if (breakdown.IDLE) parts.push(`${breakdown.IDLE} idle`)
+    if (breakdown.DOWN) parts.push(`${breakdown.DOWN} down`)
+
+    return parts.length ? parts.join(', ') : 'No machines reporting'
+  }
+
+  const formatAlertSubtitle = (breakdown = {}) => {
+    const parts = []
+
+    if (breakdown.critical) parts.push(`${breakdown.critical} critical`)
+    if (breakdown.warning) parts.push(`${breakdown.warning} warnings`)
+    if (breakdown.info) parts.push(`${breakdown.info} info`)
+
+    return parts.length ? parts.join(', ') : 'No open alerts'
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -121,7 +143,7 @@ export default function Dashboard() {
         <StatCard
           title="Active Machines"
           value={`${kpis?.machines?.active || 0}/${kpis?.machines?.total || 0}`}
-          subtitle="3 running, 1 in maintenance"
+          subtitle={formatMachineSubtitle(kpis?.machines?.breakdown)}
           icon={Cog}
           trend="98.2%"
           trendUp={true}
@@ -139,7 +161,7 @@ export default function Dashboard() {
         <StatCard
           title="Open Alerts"
           value={kpis?.alerts?.open || 0}
-          subtitle="2 warnings, 1 info"
+          subtitle={formatAlertSubtitle(kpis?.alerts?.breakdown)}
           icon={AlertTriangle}
           color="bg-danger"
         />

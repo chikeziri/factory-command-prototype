@@ -1,5 +1,15 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { getUserModules } from '../lib/permissions'
+
+function normalizeUser(user) {
+  if (!user) return null
+
+  return {
+    ...user,
+    modules: user.modules?.length ? user.modules : getUserModules(user),
+  }
+}
 
 export const useAuthStore = create(
   persist(
@@ -17,13 +27,23 @@ export const useAuthStore = create(
             body: JSON.stringify({ email, password }),
           })
 
-          const data = await res.json()
-
-          if (!data.success) {
-            throw new Error(data.error?.message || 'Login failed')
+          let data
+          try {
+            data = await res.json()
+          } catch {
+            throw new Error('Unable to reach the server. Check that the backend is running on port 3001.')
           }
 
-          set({ user: data.data.user, token: data.data.token, isLoading: false })
+          if (!data.success) {
+            const message = typeof data.error === 'string'
+              ? data.error
+              : data.error?.message || 'Login failed'
+            throw new Error(message)
+          }
+
+          const user = normalizeUser(data.data.user)
+
+          set({ user, token: data.data.token, isLoading: false })
           return data.data
         } catch (error) {
           set({ isLoading: false })
@@ -36,11 +56,45 @@ export const useAuthStore = create(
       },
 
       updateUser: (updates) => {
-        set({ user: { ...get().user, ...updates } })
+        set({ user: normalizeUser({ ...get().user, ...updates }) })
+      },
+
+      setUser: (user) => {
+        set({ user: normalizeUser(user) })
       },
     }),
     {
-      name: 'factory-command-auth',
+      name: 'sifos-auth',
+      version: 2,
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+      }),
+      migrate: (persistedState, version) => {
+        if (version < 2 || !persistedState) {
+          return { user: null, token: null }
+        }
+        return persistedState
+      },
     }
   )
 )
+
+export async function hydrateAuthStore() {
+  try {
+    await Promise.race([
+      useAuthStore.persist.rehydrate(),
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+    ])
+  } catch {
+    useAuthStore.setState({ user: null, token: null })
+  }
+
+  const { user, token } = useAuthStore.getState()
+
+  if (token && user) {
+    useAuthStore.setState({ user: normalizeUser(user) })
+  } else {
+    useAuthStore.setState({ user: null, token: null })
+  }
+}

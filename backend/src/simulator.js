@@ -117,7 +117,11 @@ const startSimulator = (io, prisma) => {
     }
   }, 5000); // Every 5 seconds
 
-  seedDemoData(prisma);
+  // Initial data population if empty
+  seedDemoData(prisma).catch((error) => {
+    console.error('Demo seed failed:', error.message);
+    console.error('Start PostgreSQL first: docker compose up -d (from project root)');
+  });
 };
 
 module.exports = { startSimulator };

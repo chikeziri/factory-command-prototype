@@ -1,4 +1,4 @@
-# Factory Command — Industrial Operations Platform
+# SIFOS — Smart Integrated Factory Operations System
 
 A unified cloud-based platform for factory management: access control, attendance, production machines, inventory, environmental sensors, company assets, and ERP — all in one dashboard.
 
@@ -16,20 +16,28 @@ A unified cloud-based platform for factory management: access control, attendanc
 
 ## Quick Start (Local)
 
-### Backend
+### 1. Start PostgreSQL (Docker)
 
-```bash
+```powershell
+cd c:\Users\HomePC\Documents\Jobs\factory-command-prototype
+docker compose up -d
+```
+
+### 2. Backend
+
+```powershell
 cd backend
 cp .env.example .env
 npm install
+$env:NODE_TLS_REJECT_UNAUTHORIZED="0"
 npx prisma migrate deploy
 npm run db:seed
 npm run dev
 ```
 
-### Frontend
+### 3. Frontend
 
-```bash
+```powershell
 cd frontend
 npm install
 npm run dev
@@ -63,10 +71,11 @@ Open http://localhost:5173
 factory-command-prototype/
 ├── backend/          # Express API + Prisma + Socket.io
 ├── frontend/         # React PWA dashboard
+├── docker-compose.yml
 ├── DEPLOY.md         # Step-by-step demo deployment
 └── README.md
 ```
 
 ## License
 
-Proprietary — Factory Command Systems
+Proprietary — SIFOS

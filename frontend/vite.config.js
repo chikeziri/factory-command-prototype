@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'masked-icon.svg', 'icon-192x192.png', 'icon-512x512.png'],
       manifest: {
-        name: 'Factory Command',
-        short_name: 'FactoryCmd',
-        description: 'Unified Industrial Operations Platform',
+        name: 'SIFOS',
+        short_name: 'SIFOS',
+        description: 'Smart Integrated Factory Operations System',
         theme_color: '#0f172a',
         background_color: '#0f172a',
         display: 'standalone',

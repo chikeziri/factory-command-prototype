@@ -19,7 +19,9 @@ router.get('/kpis', authenticate, async (req, res) => {
       inventoryItems,
       openAlerts,
       monthlyRevenue,
-      monthlyExpenses
+      monthlyExpenses,
+      machineStatuses,
+      alertSeverities
     ] = await Promise.all([
       prisma.employee.count(),
       prisma.attendanceRecord.count({
@@ -38,6 +40,15 @@ router.get('/kpis', authenticate, async (req, res) => {
       prisma.journalEntry.aggregate({
         where: { sourceModule: { in: ['payroll', 'expense'] }, date: { gte: monthStart } },
         _sum: { totalDebit: true }
+      }),
+      prisma.machine.groupBy({
+        by: ['status'],
+        _count: { _all: true }
+      }),
+      prisma.alert.groupBy({
+        by: ['severity'],
+        where: { status: { in: ['pending', 'sent'] } },
+        _count: { _all: true }
       })
     ]);
 
@@ -50,13 +61,27 @@ router.get('/kpis', authenticate, async (req, res) => {
       0
     );
 
+    const machineBreakdown = machineStatuses.reduce((acc, item) => {
+      acc[item.status] = item._count._all;
+      return acc;
+    }, {});
+
+    const alertBreakdown = alertSeverities.reduce((acc, item) => {
+      acc[item.severity] = item._count._all;
+      return acc;
+    }, {});
+
     res.json({
       success: true,
       data: {
         employees: { total: totalEmployees, present: presentToday },
-        machines: { active: activeMachines, total: totalMachines },
+        machines: {
+          active: activeMachines,
+          total: totalMachines,
+          breakdown: machineBreakdown
+        },
         inventory: { totalValue: totalInventoryValue, lowStock: lowStockItems },
-        alerts: { open: openAlerts },
+        alerts: { open: openAlerts, breakdown: alertBreakdown },
         finance: {
           monthlyRevenue: monthlyRevenue._sum.totalCredit || 0,
           monthlyExpenses: monthlyExpenses._sum.totalDebit || 0

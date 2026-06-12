@@ -1,7 +1,7 @@
 {
-  "name": "factory-command-api",
+  "name": "sifos-api",
   "version": "1.0.0",
-  "description": "Factory Command - Industrial Operations Platform API",
+  "description": "SIFOS - Smart Integrated Factory Operations System API",
   "main": "src/index.js",
   "scripts": {
     "start": "node scripts/start.js",

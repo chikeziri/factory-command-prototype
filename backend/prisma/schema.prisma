@@ -19,6 +19,8 @@ model User {
   role          Role      @default(OPERATOR)
   department    String?
   isActive      Boolean   @default(true)
+  mustChangePassword Boolean @default(false)
+  modulePermissions  Json     @default("[]")
   lastLoginAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -27,6 +29,7 @@ model User {
   assetAssignments  AssetAssignment[]
   journalEntries    JournalEntry[] @relation("CreatedBy")
   alerts            Alert[]
+  activityLogs      ActivityLog[]
 
   @@map("users")
 }
@@ -100,6 +103,8 @@ model AccessPoint {
   deviceType  String
   direction   String
   status      String   @default("online")
+  isUnlocked  Boolean  @default(false)
+  unlockedAt  DateTime?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
 
@@ -486,6 +491,21 @@ model Alert {
   createdAt       DateTime @default(now())
 
   @@map("alerts")
+}
+
+// ============== ACTIVITY LOGS ==============
+model ActivityLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  action      String
+  module      String
+  description String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("activity_logs")
 }
 
 // ============== DASHBOARD ==============

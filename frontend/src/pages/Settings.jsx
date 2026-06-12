@@ -1,10 +1,48 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
-import { Settings as SettingsIcon, User, Bell, Shield, Globe } from 'lucide-react'
+import { Settings as SettingsIcon, User, Bell, Shield, Globe, Camera } from 'lucide-react'
+import toast from 'react-hot-toast'
+import api from '../lib/api'
+import UserAvatar from '../components/UserAvatar'
+import { formatLabel } from '../lib/formatters'
 
 export default function SettingsPage() {
-  const { user } = useAuthStore()
+  const { user, setUser } = useAuthStore()
   const [activeTab, setActiveTab] = useState('profile')
+  const [uploading, setUploading] = useState(false)
+
+  const handlePhotoUpload = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please choose an image file')
+      return
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Photo must be smaller than 2MB')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = async () => {
+      setUploading(true)
+      try {
+        const res = await api.post('/api/v1/users/profile/avatar', {
+          imageData: reader.result
+        })
+        setUser(res.data.data)
+        toast.success('Profile photo updated')
+      } catch (error) {
+        toast.error(error.response?.data?.error?.message || 'Could not upload photo')
+      } finally {
+        setUploading(false)
+      }
+    }
+    reader.readAsDataURL(file)
+  }
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
@@ -49,15 +87,19 @@ export default function SettingsPage() {
               <h3 className="section-title mb-0">Profile Information</h3>
 
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-brand-600/30 rounded-full flex items-center justify-center">
-                  <span className="text-xl font-bold text-brand-400">
-                    {user?.firstName?.[0]}{user?.lastName?.[0]}
-                  </span>
-                </div>
+                <UserAvatar user={user} size="lg" />
                 <div>
                   <p className="font-semibold text-white">{user?.firstName} {user?.lastName}</p>
                   <p className="text-sm text-slate-500">{user?.email}</p>
-                  <span className="badge bg-brand-600/20 text-brand-400 mt-1">{user?.role?.replace('_', ' ')}</span>
+                  <span className="badge bg-brand-600/20 text-brand-400 mt-1">{formatLabel(user?.role)}</span>
+                  <div className="mt-3">
+                    <label className="btn-secondary text-sm cursor-pointer">
+                      <Camera className="w-4 h-4" />
+                      {uploading ? 'Uploading...' : 'Upload Photo'}
+                      <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
+                    </label>
+                  </div>
+                  <p className="text-xs text-slate-600 mt-2">Your photo helps the owner identify you across attendance and access logs.</p>
                 </div>
               </div>
 
@@ -143,6 +185,7 @@ export default function SettingsPage() {
               </div>
 
               <button className="btn-primary">Update Password</button>
+              <Link to="/change-password" className="btn-primary inline-flex">Go to Change Password</Link>
             </div>
           )}
 
@@ -153,7 +196,7 @@ export default function SettingsPage() {
               <div className="space-y-3">
                 <div className="flex justify-between p-3 bg-slate-800/50 rounded-lg">
                   <span className="text-sm text-slate-400">Platform Version</span>
-                  <span className="text-sm text-white">Factory Command v1.0.0</span>
+                  <span className="text-sm text-white">SIFOS v1.0.0</span>
                 </div>
                 <div className="flex justify-between p-3 bg-slate-800/50 rounded-lg">
                   <span className="text-sm text-slate-400">Database</span>

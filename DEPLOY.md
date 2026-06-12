@@ -1,6 +1,6 @@
-# Factory Command — Demo Deployment Guide
+# SIFOS — Demo Deployment Guide
 
-Use this checklist to deploy the live demo for client presentations.
+Smart Integrated Factory Operations System — deployment checklist for client presentations.
 
 ## What gets deployed
 
@@ -32,7 +32,7 @@ PORT=3001
 ```
 
 6. Deploy — Railway runs migrations, seeds demo data, and starts the API
-7. Copy your public Railway URL (e.g. `https://factory-command-api.up.railway.app`)
+7. Copy your public Railway URL (e.g. `https://sifos-api.up.railway.app`)
 8. Verify: open `https://YOUR-RAILWAY-URL/health`
 
 ## 3. Deploy frontend on Vercel
@@ -56,40 +56,40 @@ VITE_API_URL=https://YOUR-RAILWAY-URL
 | manager@factory.ng | Factory Manager | demo123 |
 | operator@factory.ng | Machine Operator | demo123 |
 
-## 5. Demo talking points
+## 5. Local testing (PowerShell)
 
-- Dashboard shows live KPIs, attendance, machines, inventory, and finance
-- Real-time updates every 5 seconds (machines, sensors, access logs, alerts)
-- Modules: Attendance, Access Control, Production, Inventory, Environment, Assets, ERP, Alerts, Reports
-- Mobile-friendly PWA — installable on phone/tablet
+### Start database
 
-## 6. Local development
+```powershell
+cd c:\Users\HomePC\Documents\Jobs\factory-command-prototype
+docker compose up -d
+```
 
-### Backend
-```bash
-cd backend
-cp .env.example .env
-npm install
+### Backend (Terminal 1)
+
+```powershell
+cd c:\Users\HomePC\Documents\Jobs\factory-command-prototype\backend
+$env:NODE_TLS_REJECT_UNAUTHORIZED="0"
 npx prisma migrate deploy
 npm run db:seed
 npm run dev
 ```
 
-### Frontend
-```bash
-cd frontend
-npm install
+### Frontend (Terminal 2)
+
+```powershell
+cd c:\Users\HomePC\Documents\Jobs\factory-command-prototype\frontend
 npm run dev
 ```
 
-Open http://localhost:5173 and log in with demo credentials.
+Open http://localhost:5173
 
-## Troubleshooting
+## 6. Troubleshooting
 
 | Problem | Fix |
 |---------|-----|
+| `Authentication failed` on startup | Run `docker compose up -d` and use the `DATABASE_URL` in `backend/.env` |
 | Login fails | Check `VITE_API_URL` matches Railway URL exactly |
 | CORS errors | Set `CLIENT_URL` on Railway to your Vercel URL |
-| Empty dashboard | Confirm `DEMO_MODE=true` and check Railway logs for seed output |
-| Socket not connecting | Ensure `VITE_API_URL` is set (not empty) on Vercel |
-| 500 on KPIs | Redeploy backend after database migration completes |
+| Empty dashboard | Confirm `DEMO_MODE=true` and run `npm run db:seed` |
+| Socket not connecting | Ensure `VITE_API_URL` is set on Vercel |

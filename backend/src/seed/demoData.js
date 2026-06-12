@@ -224,7 +224,7 @@ async function seedDemoData(prisma) {
 
   await prisma.alert.createMany({
     data: [
-      { title: 'System Initialization', message: 'Factory Command platform initialized successfully', severity: 'info', module: 'system', status: 'resolved', resolvedAt: new Date() },
+      { title: 'System Initialization', message: 'SIFOS platform initialized successfully', severity: 'info', module: 'system', status: 'resolved', resolvedAt: new Date() },
       { title: 'Low Stock Alert', message: 'Hydraulic Seal Kit is below reorder point (12 kits remaining)', severity: 'warning', module: 'inventory', status: 'sent' },
       { title: 'Machine Maintenance Due', message: 'CNC Lathe Beta scheduled maintenance in 2 days', severity: 'info', module: 'production', status: 'sent' }
     ]

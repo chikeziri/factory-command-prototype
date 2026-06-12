@@ -31,7 +31,10 @@ const authenticate = async (req, res, next) => {
         lastName: true,
         role: true,
         department: true,
-        isActive: true
+        isActive: true,
+        mustChangePassword: true,
+        modulePermissions: true,
+        avatar: true
       }
     });
 

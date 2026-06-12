@@ -3,12 +3,29 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 const { authenticate, requireRole, JWT_SECRET } = require('../middleware/auth');
+const { logActivity } = require('../utils/activity');
+const { serializeUser } = require('../utils/userResponse');
 
 const router = express.Router();
 const prisma = new PrismaClient();
 const isDemoMode = process.env.DEMO_MODE === 'true';
 
-// Login
+const userSelect = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  role: true,
+  department: true,
+  phone: true,
+  avatar: true,
+  isActive: true,
+  mustChangePassword: true,
+  modulePermissions: true,
+  lastLoginAt: true,
+  createdAt: true
+};
+
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -30,7 +47,7 @@ router.post('/login', async (req, res) => {
     }
 
     const passwordMatches = await bcrypt.compare(password, user.password);
-    const demoPasswordAllowed = isDemoMode && password === 'demo123';
+    const demoPasswordAllowed = isDemoMode && password === 'demo123' && !user.mustChangePassword;
 
     if (!passwordMatches && !demoPasswordAllowed) {
       return res.status(401).json({
@@ -39,10 +56,16 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Update last login
     await prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() }
+    });
+
+    await logActivity({
+      userId: user.id,
+      action: 'login',
+      module: 'auth',
+      description: `${user.firstName} ${user.lastName} signed in`
     });
 
     const token = jwt.sign(
@@ -55,15 +78,7 @@ router.post('/login', async (req, res) => {
       success: true,
       data: {
         token,
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          role: user.role,
-          department: user.department,
-          avatar: user.avatar
-        }
+        user: serializeUser(user)
       }
     });
   } catch (error) {
@@ -74,33 +89,11 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Get current user
-router.get('/me', async (req, res) => {
+router.get('/me', authenticate, async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'No token provided' }
-      });
-    }
-
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
-
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        department: true,
-        phone: true,
-        avatar: true,
-        lastLoginAt: true
-      }
+      where: { id: req.user.id },
+      select: userSelect
     });
 
     if (!user) {
@@ -110,7 +103,7 @@ router.get('/me', async (req, res) => {
       });
     }
 
-    res.json({ success: true, data: user });
+    res.json({ success: true, data: serializeUser(user) });
   } catch (error) {
     res.status(401).json({
       success: false,
@@ -119,25 +112,57 @@ router.get('/me', async (req, res) => {
   }
 });
 
-// Get all users (admin only)
-router.get('/users', authenticate, requireRole('TENANT_ADMIN', 'SUPER_ADMIN', 'FACTORY_MANAGER'), async (req, res) => {
+router.post('/change-password', authenticate, async (req, res) => {
   try {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        department: true,
-        isActive: true,
-        lastLoginAt: true,
-        createdAt: true
+    const { currentPassword, newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'New password must be at least 6 characters' }
+      });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+
+    if (!user.mustChangePassword) {
+      if (!currentPassword) {
+        return res.status(400).json({
+          success: false,
+          error: { message: 'Current password is required' }
+        });
+      }
+
+      const currentMatches = await bcrypt.compare(currentPassword, user.password);
+      if (!currentMatches) {
+        return res.status(400).json({
+          success: false,
+          error: { message: 'Current password is incorrect' }
+        });
+      }
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: bcrypt.hashSync(newPassword, 10),
+        mustChangePassword: false
       },
-      orderBy: { createdAt: 'desc' }
+      select: userSelect
     });
 
-    res.json({ success: true, data: users });
+    await logActivity({
+      userId: user.id,
+      action: 'change_password',
+      module: 'auth',
+      description: `${user.firstName} ${user.lastName} changed password`
+    });
+
+    res.json({
+      success: true,
+      message: 'Password updated successfully',
+      data: serializeUser(updated)
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: { message: error.message } });
   }

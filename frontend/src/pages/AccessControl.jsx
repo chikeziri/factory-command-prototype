@@ -1,10 +1,13 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { Shield, Lock, Unlock, DoorOpen, UserCheck, Clock, AlertTriangle } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Lock, Unlock, DoorOpen } from 'lucide-react'
+import toast from 'react-hot-toast'
 import api from '../lib/api'
+import { formatLabel } from '../lib/formatters'
 
 export default function AccessControl() {
-  const [unlocking, setUnlocking] = useState(null)
+  const [loadingId, setLoadingId] = useState(null)
+  const queryClient = useQueryClient()
 
   const { data: points } = useQuery({
     queryKey: ['access-points'],
@@ -24,14 +27,24 @@ export default function AccessControl() {
     refetchInterval: 5000,
   })
 
-  const handleUnlock = async (pointId) => {
-    setUnlocking(pointId)
+  const handleToggleAccess = async (point) => {
+    setLoadingId(point.id)
     try {
-      await api.post('/api/v1/access/unlock', { accessPointId: pointId })
-    } catch (e) {
-      console.error(e)
+      if (point.isUnlocked) {
+        const res = await api.post('/api/v1/access/lock', { accessPointId: point.id })
+        toast.success(res.data.message)
+      } else {
+        const res = await api.post('/api/v1/access/unlock', { accessPointId: point.id })
+        toast.success(res.data.message)
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['access-points'] })
+      await queryClient.invalidateQueries({ queryKey: ['access-logs'] })
+    } catch (error) {
+      toast.error(error.response?.data?.error?.message || 'Action failed')
+    } finally {
+      setTimeout(() => setLoadingId(null), 1000)
     }
-    setTimeout(() => setUnlocking(null), 2000)
   }
 
   const statusColors = {
@@ -49,45 +62,62 @@ export default function AccessControl() {
         </div>
       </div>
 
-      {/* Access Points Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {points?.map((point) => (
-          <div key={point.id} className="card p-5">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center">
-                  <DoorOpen className="w-5 h-5 text-slate-400" />
+        {points?.map((point) => {
+          const isUnlocked = point.isUnlocked
+          const isLoading = loadingId === point.id
+
+          return (
+            <div
+              key={point.id}
+              className={`card p-5 transition-colors ${isUnlocked ? 'border-success/40 bg-success/5' : ''}`}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isUnlocked ? 'bg-success/20' : 'bg-slate-800'}`}>
+                    <DoorOpen className={`w-5 h-5 ${isUnlocked ? 'text-success' : 'text-slate-400'}`} />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white text-sm">{point.name}</h3>
+                    <p className="text-xs text-slate-500">{point.location}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-white text-sm">{point.name}</h3>
-                  <p className="text-xs text-slate-500">{point.location}</p>
+                <div className="flex items-center gap-2">
+                  {isUnlocked && <span className="badge bg-success/20 text-success">Unlocked</span>}
+                  <div className={`w-2.5 h-2.5 rounded-full ${statusColors[point.status] || 'bg-slate-500'}`} />
                 </div>
               </div>
-              <div className={`w-2.5 h-2.5 rounded-full ${statusColors[point.status] || 'bg-slate-500'}`} />
-            </div>
 
-            <div className="flex items-center justify-between text-xs text-slate-500 mb-4">
-              <span>{point.deviceType} • {point.direction}</span>
-              <span>{point._count?.accessLogs || 0} entries today</span>
-            </div>
+              <div className="flex items-center justify-between text-xs text-slate-500 mb-4">
+                <span>{formatLabel(point.deviceType)} • {formatLabel(point.direction)}</span>
+                <span>{point.todayEntries || 0} entries today</span>
+              </div>
 
-            <button
-              onClick={() => handleUnlock(point.id)}
-              disabled={unlocking === point.id || point.status !== 'online'}
-              className="w-full btn-primary justify-center text-sm py-2 disabled:opacity-50"
-            >
-              {unlocking === point.id ? (
-                <Unlock className="w-4 h-4 animate-pulse" />
-              ) : (
-                <Lock className="w-4 h-4" />
-              )}
-              {unlocking === point.id ? 'Unlocking...' : 'Remote Unlock'}
-            </button>
-          </div>
-        ))}
+              <button
+                onClick={() => handleToggleAccess(point)}
+                disabled={isLoading || point.status !== 'online'}
+                className={`w-full justify-center text-sm py-2 disabled:opacity-50 ${
+                  isUnlocked ? 'btn-secondary' : 'btn-primary'
+                }`}
+              >
+                {isLoading ? (
+                  <Unlock className="w-4 h-4 animate-pulse" />
+                ) : isUnlocked ? (
+                  <Lock className="w-4 h-4" />
+                ) : (
+                  <Unlock className="w-4 h-4" />
+                )}
+                {isLoading
+                  ? 'Please wait...'
+                  : isUnlocked
+                    ? 'Remote Lock'
+                    : 'Remote Unlock'}
+              </button>
+            </div>
+          )
+        })}
       </div>
 
-      {/* Recent Access Logs */}
       <div className="card">
         <div className="p-4 border-b border-slate-800">
           <h3 className="font-semibold text-white">Recent Access Events</h3>
@@ -112,17 +142,19 @@ export default function AccessControl() {
                   </td>
                   <td className="px-4 py-3 text-sm text-white">{log.accessPoint?.name}</td>
                   <td className="px-4 py-3 text-sm text-slate-400">
-                    {log.userId ? 'Employee' : log.visitorName || 'Unknown'}
+                    {log.user
+                      ? `${log.user.firstName} ${log.user.lastName}`
+                      : log.visitorName || 'Unknown'}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`badge ${log.direction === 'entry' ? 'bg-success/20 text-success' : 'bg-brand-500/20 text-brand-400'}`}>
-                      {log.direction}
+                      {formatLabel(log.direction)}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-slate-400 capitalize">{log.method}</td>
+                  <td className="px-4 py-3 text-sm text-slate-400">{formatLabel(log.method)}</td>
                   <td className="px-4 py-3">
                     <span className={`badge ${log.result === 'granted' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
-                      {log.result}
+                      {formatLabel(log.result)}
                     </span>
                   </td>
                 </tr>

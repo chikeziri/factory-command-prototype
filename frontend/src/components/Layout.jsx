@@ -4,23 +4,27 @@ import { useAuthStore } from '../stores/authStore'
 import {
   LayoutDashboard, Users, Shield, Cog, Package,
   Thermometer, Laptop, Calculator, Bell, FileText,
-  Settings, Menu, X, ChevronDown, LogOut,
-  Factory, Wifi, WifiOff
+  Settings, Menu, LogOut, Factory, Wifi, WifiOff, ScrollText, UserCog
 } from 'lucide-react'
+import UserAvatar from './UserAvatar'
+import { canAccessModule, NAV_ITEMS } from '../lib/permissions'
+import { formatLabel } from '../lib/formatters'
 
-const navItems = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/attendance', label: 'Attendance', icon: Users },
-  { path: '/access', label: 'Access Control', icon: Shield },
-  { path: '/machines', label: 'Production', icon: Cog },
-  { path: '/inventory', label: 'Inventory', icon: Package },
-  { path: '/sensors', label: 'Environment', icon: Thermometer },
-  { path: '/assets', label: 'Assets', icon: Laptop },
-  { path: '/erp', label: 'ERP & Finance', icon: Calculator },
-  { path: '/alerts', label: 'Alerts', icon: Bell },
-  { path: '/reports', label: 'Reports', icon: FileText },
-  { path: '/settings', label: 'Settings', icon: Settings },
-]
+const iconMap = {
+  dashboard: LayoutDashboard,
+  attendance: Users,
+  access: Shield,
+  machines: Cog,
+  inventory: Package,
+  sensors: Thermometer,
+  assets: Laptop,
+  erp: Calculator,
+  alerts: Bell,
+  reports: FileText,
+  activity: ScrollText,
+  team: UserCog,
+  settings: Settings,
+}
 
 export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -67,17 +71,17 @@ export default function Layout({ children }) {
               <Factory className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-lg text-white leading-tight">Factory Command</h1>
-              <p className="text-xs text-slate-500">Industrial Operations</p>
+              <h1 className="font-bold text-lg text-white leading-tight">SIFOS</h1>
+              <p className="text-xs text-slate-500">Smart Integrated Factory Operations</p>
             </div>
           </div>
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-          {navItems.map((item) => {
-            const Icon = item.icon
-            const isActive = location.pathname === item.path || 
+          {NAV_ITEMS.filter((item) => canAccessModule(user, item.key)).map((item) => {
+            const Icon = iconMap[item.key]
+            const isActive = location.pathname === item.path ||
               (item.path !== '/' && location.pathname.startsWith(item.path))
 
             return (
@@ -89,9 +93,6 @@ export default function Layout({ children }) {
               >
                 <Icon className="w-5 h-5" />
                 <span className="text-sm font-medium">{item.label}</span>
-                {item.path === '/alerts' && (
-                  <span className="ml-auto bg-danger/20 text-danger text-xs px-2 py-0.5 rounded-full">3</span>
-                )}
               </Link>
             )
           })}
@@ -100,16 +101,16 @@ export default function Layout({ children }) {
         {/* User section */}
         <div className="p-4 border-t border-slate-800">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 bg-brand-600/30 rounded-full flex items-center justify-center">
-              <span className="text-sm font-semibold text-brand-400">
-                {user?.firstName?.[0]}{user?.lastName?.[0]}
-              </span>
-            </div>
+            <Link to="/profile" onClick={() => setSidebarOpen(false)}>
+              <UserAvatar user={user} />
+            </Link>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">
-                {user?.firstName} {user?.lastName}
-              </p>
-              <p className="text-xs text-slate-500 truncate">{user?.role?.replace('_', ' ')}</p>
+              <Link to="/profile" onClick={() => setSidebarOpen(false)} className="block">
+                <p className="text-sm font-medium text-white truncate hover:text-brand-400">
+                  {user?.firstName} {user?.lastName}
+                </p>
+              </Link>
+              <p className="text-xs text-slate-500 truncate">{formatLabel(user?.role)}</p>
             </div>
             <button 
               onClick={handleLogout}
@@ -148,14 +149,10 @@ export default function Layout({ children }) {
             >
               <Menu className="w-5 h-5" />
             </button>
-            <span className="font-semibold text-white">Factory Command</span>
+            <span className="font-semibold text-white">SIFOS</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-brand-600/30 rounded-full flex items-center justify-center">
-              <span className="text-xs font-semibold text-brand-400">
-                {user?.firstName?.[0]}
-              </span>
-            </div>
+            <UserAvatar user={user} size="sm" />
           </div>
         </header>
 

@@ -47,8 +47,8 @@ export default function Login() {
           <div className="w-16 h-16 bg-gradient-to-br from-brand-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-500/20">
             <Factory className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-1">Factory Command</h1>
-          <p className="text-slate-500">Unified Industrial Operations Platform</p>
+          <h1 className="text-2xl font-bold text-white mb-1">SIFOS</h1>
+          <p className="text-slate-400 text-sm">Smart Integrated Factory Operations System</p>
           <div className="flex items-center justify-center gap-2 mt-2 text-xs text-slate-600">
             <Wifi className="w-3 h-3" />
             <span>Starlink Connected • Lagos, Nigeria</span>
@@ -130,7 +130,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-xs text-slate-600 mt-6">
-          Factory Command v1.0 • Secure Cloud Platform
+          SIFOS v1.0 • Secure Cloud Platform
         </p>
       </div>
     </div>

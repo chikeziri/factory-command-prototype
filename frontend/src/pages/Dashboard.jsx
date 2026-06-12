@@ -4,7 +4,7 @@ import {
   Users, Cog, Package, AlertTriangle, TrendingUp, 
   TrendingDown, Activity, Clock, Wifi, Server
 } from 'lucide-react'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts'
 import api from '../lib/api'
 import { useSocket } from '../hooks/useSocket'
 
@@ -220,9 +220,16 @@ export default function Dashboard() {
                 itemStyle={{ color: '#fff' }}
                 formatter={(value) => [`${value}%`]}
               />
-              <Bar dataKey="availability" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="performance" fill="#06b6d4" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="quality" fill="#10b981" radius={[4, 4, 0, 0]} />
+              <Legend
+                verticalAlign="bottom"
+                height={36}
+                iconType="circle"
+                iconSize={8}
+                wrapperStyle={{ fontSize: '12px', color: '#94a3b8' }}
+              />
+              <Bar dataKey="availability" name="Availability" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="performance" name="Performance" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="quality" name="Quality" fill="#10b981" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

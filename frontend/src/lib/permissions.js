@@ -1,3 +1,5 @@
+import { getApiUrl } from './config'
+
 export const OWNER_ONLY_MODULES = ['settings', 'reports', 'activity', 'team']
 
 export const ALL_MODULES = [
@@ -95,6 +97,6 @@ export function isOwner(user) {
 export function avatarUrl(user) {
   if (!user?.avatar) return null
   if (user.avatar.startsWith('http')) return user.avatar
-  const base = import.meta.env.VITE_API_URL || ''
+  const base = getApiUrl()
   return `${base}${user.avatar}`
 }

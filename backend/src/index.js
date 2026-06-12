@@ -33,12 +33,13 @@ const activityRoutes = require('./routes/activity');
 
 // Import simulator
 const { startSimulator } = require('./simulator');
+const { corsOrigin } = require('./lib/cors');
 
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: corsOrigin,
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -73,7 +74,7 @@ const apiLimiter = rateLimit({
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: corsOrigin,
   credentials: true
 }));
 app.use(morgan('dev'));

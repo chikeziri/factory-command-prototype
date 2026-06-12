@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { getUserModules } from '../lib/permissions'
+import { requireApiUrl } from '../lib/config'
 
 function normalizeUser(user) {
   if (!user) return null
@@ -21,7 +22,7 @@ export const useAuthStore = create(
       login: async (email, password) => {
         set({ isLoading: true })
         try {
-          const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/v1/auth/login`, {
+          const res = await fetch(`${requireApiUrl()}/api/v1/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password }),
@@ -31,7 +32,11 @@ export const useAuthStore = create(
           try {
             data = await res.json()
           } catch {
-            throw new Error('Unable to reach the server. Check that the backend is running on port 3001.')
+            throw new Error(
+              import.meta.env.PROD
+                ? 'Unable to reach the backend API. Check VITE_API_URL on Vercel and redeploy.'
+                : 'Unable to reach the server. Check that the backend is running on port 3001.'
+            )
           }
 
           if (!data.success) {

@@ -1,13 +1,18 @@
 import { useEffect, useRef } from 'react'
 import { io } from 'socket.io-client'
 import { useAuthStore } from '../stores/authStore'
+import { getApiUrl } from '../lib/config'
 
 export function useSocket(callback) {
   const socketRef = useRef(null)
   const { token } = useAuthStore()
 
   useEffect(() => {
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+    const API_URL = getApiUrl() || 'http://localhost:3001'
+
+    if (import.meta.env.PROD && !getApiUrl()) {
+      return undefined
+    }
 
     const socket = io(API_URL, {
       transports: ['websocket', 'polling'],

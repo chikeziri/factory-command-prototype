@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
+import { isApiConfigured } from '../lib/config'
 import { Factory, Eye, EyeOff, Loader2, Wifi } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -56,6 +57,12 @@ export default function Login() {
         </div>
 
         {/* Login Card */}
+        {!isApiConfigured() && import.meta.env.PROD && (
+          <div className="card p-4 mb-4 border border-warning/40 bg-warning/10 text-sm text-warning">
+            Backend URL is missing on Vercel. Set <strong>VITE_API_URL</strong> to your Railway URL, then redeploy.
+          </div>
+        )}
+
         <div className="card p-6 mb-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

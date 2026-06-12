@@ -29,21 +29,9 @@ export default function Login() {
     }
   }
 
-  const demoAccounts = [
-    { email: 'owner@factory.ng', role: 'Factory Owner', color: 'bg-brand-500' },
-    { email: 'manager@factory.ng', role: 'Factory Manager', color: 'bg-cyan-500' },
-    { email: 'operator@factory.ng', role: 'Machine Operator', color: 'bg-success' },
-  ]
-
-  const fillDemo = (demoEmail) => {
-    setEmail(demoEmail)
-    setPassword('demo123')
-  }
-
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gradient-to-br from-brand-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-500/20">
             <Factory className="w-8 h-8 text-white" />
@@ -56,14 +44,13 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Login Card */}
         {!isApiConfigured() && import.meta.env.PROD && (
           <div className="card p-4 mb-4 border border-warning/40 bg-warning/10 text-sm text-warning">
-            Backend URL is missing on Vercel. Set <strong>VITE_API_URL</strong> to your Railway URL, then redeploy.
+            Backend URL is missing on Vercel. Set <strong>VITE_API_URL</strong> to your public Railway URL, then redeploy.
           </div>
         )}
 
-        <div className="card p-6 mb-6">
+        <div className="card p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">Email Address</label>
@@ -113,27 +100,6 @@ export default function Login() {
               )}
             </button>
           </form>
-        </div>
-
-        {/* Demo Accounts */}
-        <div className="space-y-3">
-          <p className="text-xs text-slate-600 text-center uppercase tracking-wider">Demo Accounts</p>
-          {demoAccounts.map((account) => (
-            <button
-              key={account.email}
-              onClick={() => fillDemo(account.email)}
-              className="w-full card p-3 flex items-center gap-3 hover:border-slate-700 transition-colors text-left"
-            >
-              <div className={`w-8 h-8 ${account.color} rounded-full flex items-center justify-center`}>
-                <span className="text-xs font-bold text-white">{account.email[0].toUpperCase()}</span>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-white">{account.role}</p>
-                <p className="text-xs text-slate-500">{account.email}</p>
-              </div>
-              <span className="ml-auto text-xs text-slate-600">demo123</span>
-            </button>
-          ))}
         </div>
 
         <p className="text-center text-xs text-slate-600 mt-6">

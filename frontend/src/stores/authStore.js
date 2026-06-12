@@ -52,6 +52,22 @@ export const useAuthStore = create(
           return data.data
         } catch (error) {
           set({ isLoading: false })
+
+          if (error.message?.includes('VITE_API_URL')) {
+            throw error
+          }
+
+          const isNetworkFailure =
+            error.name === 'TypeError' ||
+            error.message?.includes('NetworkError') ||
+            error.message?.includes('Failed to fetch')
+
+          if (isNetworkFailure) {
+            throw new Error(
+              'Cannot reach the backend. Use your public Railway URL (https://....up.railway.app) in VITE_API_URL, set CLIENT_URL on Railway to this Vercel site, then redeploy both.'
+            )
+          }
+
           throw error
         }
       },

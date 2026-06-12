@@ -100,6 +100,40 @@ CLIENT_URL=https://YOUR-VERCEL-URL
 | Blank page after deploy | Hard refresh, or clear site data / unregister service worker |
 | Works locally, not on Vercel | Local uses Vite proxy; production needs `VITE_API_URL` |
 
+### D. Deploy without GitHub (Vercel CLI)
+
+Use this if Vercel will not connect to your GitHub repo.
+
+1. Install and log in:
+
+```powershell
+npm install -g vercel
+vercel login
+```
+
+2. Get your **public** Railway URL (not `.railway.internal`):
+   - Railway → backend service → **Settings** → **Networking** → **Public Networking**
+   - Copy the URL like `https://your-service.up.railway.app`
+
+3. Deploy from the frontend folder:
+
+```powershell
+cd frontend
+.\scripts\deploy-vercel.ps1 -ApiUrl "https://YOUR-PUBLIC-RAILWAY-URL.up.railway.app"
+```
+
+Or manually:
+
+```powershell
+cd frontend
+vercel deploy --prod --yes --build-env "VITE_API_URL=https://YOUR-PUBLIC-RAILWAY-URL.up.railway.app"
+```
+
+4. Copy the Vercel URL from the deploy output
+5. On Railway backend, set `CLIENT_URL` to that Vercel URL and redeploy
+
+**Note:** `humorous-recreation.railway.internal` is private to Railway only. Vercel and your browser need the public `https://....up.railway.app` address.
+
 ## 4. Demo login credentials
 
 | Email | Role | Password |

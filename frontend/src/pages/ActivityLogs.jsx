@@ -1,8 +1,34 @@
 import { useQuery } from '@tanstack/react-query'
-import { ScrollText } from 'lucide-react'
+import { Download, ScrollText } from 'lucide-react'
+import toast from 'react-hot-toast'
 import api from '../lib/api'
 import UserAvatar from '../components/UserAvatar'
 import { formatLabel } from '../lib/formatters'
+
+function exportLogsToCsv(logs) {
+  const headers = ['Time', 'User', 'Email', 'Module', 'Action', 'Description']
+
+  const rows = logs.map((log) => [
+    new Date(log.createdAt).toLocaleString(),
+    log.user ? `${log.user.firstName} ${log.user.lastName}` : 'System',
+    log.user?.email || '',
+    formatLabel(log.module),
+    formatLabel(log.action),
+    log.description,
+  ])
+
+  const escape = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`
+  const csv = [headers, ...rows].map((row) => row.map(escape).join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  const stamp = new Date().toISOString().slice(0, 10)
+
+  link.href = url
+  link.download = `sifos-activity-logs-${stamp}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
+}
 
 export default function ActivityLogs() {
   const { data: logs, isLoading } = useQuery({
@@ -14,6 +40,16 @@ export default function ActivityLogs() {
     refetchInterval: 15000,
   })
 
+  const handleExport = () => {
+    if (!logs?.length) {
+      toast.error('No activity logs to export')
+      return
+    }
+
+    exportLogsToCsv(logs)
+    toast.success('Activity logs exported')
+  }
+
   return (
     <div className="space-y-6">
       <div className="page-header">
@@ -21,6 +57,10 @@ export default function ActivityLogs() {
           <h1 className="page-title">Activity Logs</h1>
           <p className="text-slate-500 text-sm mt-1">Track sign-ins, unlocks, account changes, and other system actions</p>
         </div>
+        <button onClick={handleExport} className="btn-secondary" disabled={!logs?.length}>
+          <Download className="w-4 h-4" />
+          Export CSV
+        </button>
       </div>
 
       <div className="card">

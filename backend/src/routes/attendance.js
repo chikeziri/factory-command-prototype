@@ -1,6 +1,7 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { authenticate } = require('../middleware/auth');
+const { ensureDemoAttendanceForDate, startOfDay, endOfDay } = require('../utils/demoAttendance');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -11,9 +12,8 @@ router.get('/records', authenticate, async (req, res) => {
     const where = {};
 
     if (date) {
-      const d = new Date(date);
-      d.setHours(0, 0, 0, 0);
-      where.date = { gte: d, lt: new Date(d.getTime() + 24 * 60 * 60 * 1000) };
+      await ensureDemoAttendanceForDate(prisma, date);
+      where.date = { gte: startOfDay(date), lt: endOfDay(date) };
     }
     if (employee) where.employeeId = employee;
     if (status) where.status = status;

@@ -207,7 +207,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="section-title mb-0">Machine OEE</h3>
-              <p className="text-xs text-slate-500">Availability × Performance × Quality</p>
+              <p className="text-xs text-slate-500">Overall Equipment Effectiveness</p>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={250}>

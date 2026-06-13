@@ -22,6 +22,22 @@ export default function Attendance() {
     }
   })
 
+  const attendanceRows = employees?.map((emp) => {
+    const record = records?.find((r) => r.employeeId === emp.id)
+    return {
+      employee: emp,
+      record,
+      status: record?.status || 'ABSENT',
+    }
+  }) || []
+
+  const stats = {
+    present: attendanceRows.filter((row) => row.status === 'PRESENT').length,
+    late: attendanceRows.filter((row) => row.status === 'LATE').length,
+    absent: attendanceRows.filter((row) => row.status === 'ABSENT').length,
+    onLeave: attendanceRows.filter((row) => row.status === 'ON_LEAVE').length,
+  }
+
   const statusColors = {
     PRESENT: 'bg-success/20 text-success',
     LATE: 'bg-warning/20 text-warning',
@@ -54,19 +70,19 @@ export default function Attendance() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="card p-4 text-center">
-          <p className="text-2xl font-bold text-success">{records?.filter(r => r.status === 'PRESENT').length || 0}</p>
+          <p className="text-2xl font-bold text-success">{stats.present}</p>
           <p className="text-xs text-slate-500 mt-1">Present</p>
         </div>
         <div className="card p-4 text-center">
-          <p className="text-2xl font-bold text-warning">{records?.filter(r => r.status === 'LATE').length || 0}</p>
+          <p className="text-2xl font-bold text-warning">{stats.late}</p>
           <p className="text-xs text-slate-500 mt-1">Late</p>
         </div>
         <div className="card p-4 text-center">
-          <p className="text-2xl font-bold text-danger">{records?.filter(r => r.status === 'ABSENT').length || 0}</p>
+          <p className="text-2xl font-bold text-danger">{stats.absent}</p>
           <p className="text-xs text-slate-500 mt-1">Absent</p>
         </div>
         <div className="card p-4 text-center">
-          <p className="text-2xl font-bold text-info">{records?.filter(r => r.status === 'ON_LEAVE').length || 0}</p>
+          <p className="text-2xl font-bold text-info">{stats.onLeave}</p>
           <p className="text-xs text-slate-500 mt-1">On Leave</p>
         </div>
       </div>
@@ -91,9 +107,7 @@ export default function Attendance() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {employees?.map((emp) => {
-                const record = records?.find(r => r.employeeId === emp.id)
-                return (
+              {attendanceRows.map(({ employee: emp, record, status }) => (
                   <tr key={emp.id} className="hover:bg-slate-800/30 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
@@ -115,13 +129,12 @@ export default function Attendance() {
                       {record?.workHours ? `${record.workHours}h` : '—'}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`badge ${statusColors[record?.status || 'ABSENT']}`}>
-                        {record?.status || 'ABSENT'}
+                      <span className={`badge ${statusColors[status]}`}>
+                        {status.replace('_', ' ')}
                       </span>
                     </td>
                   </tr>
-                )
-              })}
+                ))}
             </tbody>
           </table>
         </div>

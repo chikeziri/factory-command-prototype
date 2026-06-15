@@ -20,6 +20,7 @@ import ActivityLogs from './pages/ActivityLogs'
 import Team from './pages/Team'
 import Settings from './pages/Settings'
 import Profile from './pages/Profile'
+import SiteSurvey from './pages/SiteSurvey'
 
 function AccessDenied() {
   const { logout } = useAuthStore()
@@ -98,45 +99,47 @@ function App() {
     )
   }
 
-  if (!user) {
-    return (
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    )
-  }
-
-  if (user.mustChangePassword) {
-    return (
-      <Routes>
-        <Route path="/change-password" element={<ChangePassword />} />
-        <Route path="*" element={<Navigate to="/change-password" replace />} />
-      </Routes>
-    )
-  }
-
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<ModuleRoute moduleKey="dashboard"><Dashboard /></ModuleRoute>} />
-        <Route path="/attendance" element={<ModuleRoute moduleKey="attendance"><Attendance /></ModuleRoute>} />
-        <Route path="/access" element={<ModuleRoute moduleKey="access"><AccessControl /></ModuleRoute>} />
-        <Route path="/machines" element={<ModuleRoute moduleKey="machines"><Machines /></ModuleRoute>} />
-        <Route path="/inventory" element={<ModuleRoute moduleKey="inventory"><Inventory /></ModuleRoute>} />
-        <Route path="/sensors" element={<ModuleRoute moduleKey="sensors"><Sensors /></ModuleRoute>} />
-        <Route path="/assets" element={<ModuleRoute moduleKey="assets"><Assets /></ModuleRoute>} />
-        <Route path="/erp/*" element={<ModuleRoute moduleKey="erp"><ERP /></ModuleRoute>} />
-        <Route path="/alerts" element={<ModuleRoute moduleKey="alerts"><Alerts /></ModuleRoute>} />
-        <Route path="/reports" element={<ModuleRoute moduleKey="reports"><Reports /></ModuleRoute>} />
-        <Route path="/activity" element={<ModuleRoute moduleKey="activity"><ActivityLogs /></ModuleRoute>} />
-        <Route path="/team" element={<ModuleRoute moduleKey="team"><Team /></ModuleRoute>} />
-        <Route path="/settings" element={<ModuleRoute moduleKey="settings"><Settings /></ModuleRoute>} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/change-password" element={<ChangePassword />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Layout>
+    <Routes>
+      <Route path="/site-survey" element={<SiteSurvey />} />
+      {!user ? (
+        <>
+          <Route path="/login" element={<Login />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </>
+      ) : user.mustChangePassword ? (
+        <>
+          <Route path="/change-password" element={<ChangePassword />} />
+          <Route path="*" element={<Navigate to="/change-password" replace />} />
+        </>
+      ) : (
+        <Route
+          path="*"
+          element={
+            <Layout>
+              <Routes>
+                <Route path="/" element={<ModuleRoute moduleKey="dashboard"><Dashboard /></ModuleRoute>} />
+                <Route path="/attendance" element={<ModuleRoute moduleKey="attendance"><Attendance /></ModuleRoute>} />
+                <Route path="/access" element={<ModuleRoute moduleKey="access"><AccessControl /></ModuleRoute>} />
+                <Route path="/machines" element={<ModuleRoute moduleKey="machines"><Machines /></ModuleRoute>} />
+                <Route path="/inventory" element={<ModuleRoute moduleKey="inventory"><Inventory /></ModuleRoute>} />
+                <Route path="/sensors" element={<ModuleRoute moduleKey="sensors"><Sensors /></ModuleRoute>} />
+                <Route path="/assets" element={<ModuleRoute moduleKey="assets"><Assets /></ModuleRoute>} />
+                <Route path="/erp/*" element={<ModuleRoute moduleKey="erp"><ERP /></ModuleRoute>} />
+                <Route path="/alerts" element={<ModuleRoute moduleKey="alerts"><Alerts /></ModuleRoute>} />
+                <Route path="/reports" element={<ModuleRoute moduleKey="reports"><Reports /></ModuleRoute>} />
+                <Route path="/activity" element={<ModuleRoute moduleKey="activity"><ActivityLogs /></ModuleRoute>} />
+                <Route path="/team" element={<ModuleRoute moduleKey="team"><Team /></ModuleRoute>} />
+                <Route path="/settings" element={<ModuleRoute moduleKey="settings"><Settings /></ModuleRoute>} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/change-password" element={<ChangePassword />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Layout>
+          }
+        />
+      )}
+    </Routes>
   )
 }
 
